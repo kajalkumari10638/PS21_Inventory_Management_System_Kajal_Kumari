@@ -1,0 +1,27 @@
+PS 21 Inventory Management System
+Menu sequences and observed output
+
+Test 1. Normal add
+Input sequence: 1 -> Pen -> 50 -> 10 -> 8
+Verified output:
+Item added | ID: 1101 | Pen | Qty: 50 | Price: 10
+
+Test 2. Boundary quantity
+Input sequence: 1 -> Pen -> 50 -> 10 -> 1 -> Eraser -> 0 -> 5 -> 8
+Verified output:
+Item added | ID: 1102 | Eraser | Qty: 0 | Price: 5
+Low stock alert: Eraser (0)
+
+Test 3. Invalid quantity and missing ID
+Input sequence: 1 -> Pencil -> -5 -> 4 -> 3 -> 999 -> 8
+Verified output:
+Invalid quantity. Quantity must be a non-negative whole number. Item not added.
+Item ID 999 not found
+
+Test 4. Stock value, low stock and deletion
+Input sequence: 1 -> Pen -> 50 -> 10 -> 1 -> Notebook -> 3 -> 40 -> 5 -> 6 -> 4 -> 1101 -> 8
+Verified output:
+Total stock value: 620
+Low stock (below 5):
+Notebook | Qty: 3
+Item 'Pen' deleted. Items left: 1
