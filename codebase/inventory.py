@@ -5,28 +5,32 @@ inventory = {}
 next_id = 1101
 LOW_STOCK_LIMIT = 5
 
-def number(text, kind=int):
+def whole_number(text):
     try:
-        value = kind(text)
-        if kind is Decimal and not value.is_finite():
-            return None
-        return value if value >= 0 else None
-    except (ValueError, InvalidOperation):
-        return None
+        value = int(text)
+        if value >= 0:
+            return value
+    except ValueError:
+        pass
+    return None
 
 def amount(value):
     text = format(value, "f")
     return text.rstrip("0").rstrip(".") if "." in text else text
 
 def save_item(item_id, name, adding):
-    quantity = number(input("Quantity: " if adding else "New quantity: ").strip())
-    price = number(input("Price: " if adding else "New price: ").strip(), Decimal)
+    quantity = whole_number(input("Quantity: " if adding else "New quantity: ").strip())
+    price_text = input("Price: " if adding else "New price: ").strip()
+    try:
+        price = Decimal(price_text)
+    except InvalidOperation:
+        price = None
     failure = "Item not added." if adding else "Item not updated."
     if not name:
         print("Name cannot be empty.", failure)
     elif quantity is None:
         print("Invalid quantity. Quantity must be a non-negative whole number.", failure)
-    elif price is None:
+    elif price is None or not price.is_finite() or price < 0:
         print("Invalid price. Price must be a non-negative number.", failure)
     else:
         inventory[item_id] = {"name": name, "quantity": quantity, "price": price}
@@ -44,7 +48,7 @@ def add_item():
         next_id += 1
 
 def change_item(action):
-    item_id = number(input(f"Enter Item ID to {action}: ").strip())
+    item_id = whole_number(input(f"Enter Item ID to {action}: ").strip())
     if item_id not in inventory:
         print("Invalid item ID." if item_id is None else f"Item ID {item_id} not found")
     elif action == "update":
@@ -57,7 +61,9 @@ def display_items(rows, empty_message):
     if not rows:
         print(empty_message)
         return
-    width = max([4] + [len(item["name"]) for _, item in rows])
+    width = len("NAME")
+    for item_id, item in rows:
+        width = max(width, len(item["name"]))
     print(f'{"ID":<8} {"NAME":<{width}} {"QTY":>8} {"PRICE":>12}')
     for item_id, item in rows:
         price = amount(item["price"])
@@ -66,14 +72,19 @@ def display_items(rows, empty_message):
 def search_items():
     query = input("Enter item name or ID: ").strip().casefold()
     if query:
-        matches = [(key, item) for key, item in inventory.items()
-                   if query == str(key) or query in item["name"].casefold()]
+        matches = []
+        for item_id, item in inventory.items():
+            if query == str(item_id) or query in item["name"].casefold():
+                matches.append((item_id, item))
         display_items(matches, "No matching items.")
     else:
         print("Enter a name or ID to search.")
 
 def show_low_stock():
-    low = [item for item in inventory.values() if item["quantity"] < LOW_STOCK_LIMIT]
+    low = []
+    for item in inventory.values():
+        if item["quantity"] < LOW_STOCK_LIMIT:
+            low.append(item)
     print(f"Low stock (below {LOW_STOCK_LIMIT}):" if low else "No low-stock items.")
     for item in low:
         print(f'{item["name"]} | Qty: {item["quantity"]}')
@@ -92,7 +103,9 @@ def main():
             elif choice in ("3", "4"):
                 change_item("update" if choice == "3" else "delete")
             elif choice == "5":
-                total = sum(item["quantity"] * item["price"] for item in inventory.values())
+                total = 0
+                for item in inventory.values():
+                    total += item["quantity"] * item["price"]
                 print(f"Total stock value: {amount(total)}")
             elif choice == "6":
                 show_low_stock()
